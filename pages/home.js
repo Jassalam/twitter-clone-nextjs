@@ -1,16 +1,19 @@
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 import NewTweet from './components/NewTweet'
 
 export default function Home(){
 
     const { data: session, status} = useSession()
+    const loading = status === 'loading'
+    const router = useRouter()
 
-    if(status === 'loading'){
-        return <p>...</p>
+    if(loading){
+        return null
     }
-    return(
-        <div>
-            {session ? <NewTweet /> :<p>You are not logged in</p>}
-        </div>
-    )
+
+    if(!session){
+        router.push('/')
+    }
+    return <NewTweet /> 
 }
