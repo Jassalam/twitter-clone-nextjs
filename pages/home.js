@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 import { getTweets } from '@/lib/data'
 
 
-export default function Home(){
+export default function Home({tweets}){
 
     const { data: session, status} = useSession()
     const loading = status === 'loading'
@@ -22,7 +22,7 @@ export default function Home(){
     return (
         <>
     <NewTweet />
-    <Tweets tweets={[{content: 'test'}, {content: 'another'}]}/> 
+    <Tweets tweets={tweets}/> 
     </>
     )
 }
