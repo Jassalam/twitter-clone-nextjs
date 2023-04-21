@@ -1,9 +1,11 @@
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
+import { useRouter } from 'next/router'
 
 export default function NewTweet() {
     const [content, setContent] = useState('')
   const { data: session } = useSession()
+  const router = useRouter()
 
 	//don't display if we're not logged in
 	if (!session || ! session.user) return null
@@ -18,7 +20,7 @@ export default function NewTweet() {
             return
         }
 
-        fetch('/api/tweet', {
+        await fetch('/api/tweet', {
             body: JSON.stringify({
                 content,
             }),
@@ -27,6 +29,8 @@ export default function NewTweet() {
             },
             method: 'POST',
         })
+
+        router.reload(window.location.pathname)
      }}
     >
         <div className='flex'>
