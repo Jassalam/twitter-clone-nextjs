@@ -1,66 +1,70 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "./auth/[...nextauth]"
-import prisma from "@/lib/prisma"
+import prisma from 'lib/prisma'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from 'pages/api/auth/[...nextauth]'
+
+
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST' && req.method !== 'DELETE') {
-        return res.status(501).end()
-    }
+  if (req.method !== 'POST' && req.method !== 'DELETE') {
+    return res.status(501).end()
+  }
 
-    const session = await getServerSession(req, res, authOptions)
+  const session = await getServerSession(req, res, authOptions)
 
-    //if(!session) return res.status(401).json({message: 'Not logged in'})
+  const user = await prisma.user.findUnique({
+    where: {
+      email: session.user.email,
+    },
+  })
 
-    const user = await prisma.user.findUnique({
-        where: {
-            email: session.user.email,
+  if (req.method === 'POST') {
+    const tweet = await prisma.tweet.create({
+      data: {
+        content: req.body.content,
+        parent: req.body.parent || null,
+        author: {
+          connect: { id: user.id },
         },
+      },
     })
 
-    //if(!user) return res.status(401).json({message: 'User not Found'})
+    const tweetWithAuthorData = await prisma.tweet.findUnique({
+      where: {
+        id: tweet.id,
+      },
+      include: {
+        author: true,
+      },
+    })
 
+    res.json(tweetWithAuthorData)
 
-    if (req.method === 'POST') {
-        //handle the post request
+    return
+  }
 
-        await prisma.tweet.create({
-            data: {
-                content: req.body.content,
-                author: {
-                    connect: { id: user.id },
-                },
-            },
+  if (req.method === 'DELETE') {
+    const id = req.body.id
 
-        })
-        res.end()
-        return
+    const tweet = await prisma.tweet.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        author: true,
+      },
+    })
+
+    if (tweet.author.id !== user.id) {
+      res.status(401).end()
+      return
     }
 
+    await prisma.tweet.delete({
+      where: { id },
+    })
+    res.status(200).end()
+    return
+  }
 
-    if (req.method === 'DELETE') {
-        const id = req.body.id
-
-        const tweet = await prisma.tweet.findUnique({
-            where: {
-                id,
-            },
-            include: {
-                author: true,
-            },
-        })
-
-        if (tweet.author.id !== user.id) {
-            res.status(401).end()
-            return
-        }
-
-        await prisma.tweet.delete({
-            where: { id },
-        })
-        res.status(200).end()
-        return
-    }
-
-    res.end()
+  res.end()
 }
-
